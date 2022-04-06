@@ -34,6 +34,17 @@ public class Search {
         }
     };
 
+    static  {
+        System.setProperty("log4j.configurationFile", getLogPath());
+    }
+
+    private static String getLogPath() {
+        if (System.getProperty("os.name").startsWith("Windows")) {
+           return  "C:\\heaerie\\passerine\\conf\\passerine-log4j.xml";
+        } else {
+           return  "/etc/passerine/conf/passerine-log4j.xml";
+        }
+    }
 
     private static synchronized String getNextIp() throws ExceedIPRange {
         if (l==255) {

@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<Configuration >
+    <Appenders>
+        <Console name="HeaeriePasserineConsole" target="">
+            <PatternLayout pattern="%d{yyyy-MM-ddTHH:mm:ss:SSSZ}|%t|HEAERIE|PASSRINE|${hostname}|%-5level|%logger{36}.%M:%line|%msg%n"></PatternLayout>
+        </Console>
+        <RollingFile name="HeaeriePasserineFile" fileNmae="C:\heaerie\passerine\log\heaerie-passerine.log"
+            filePattern="C:\heaerie\passerine\log\heaerie-passerine-%d{yyyy-MM-dd}-%i.log"
+        >
+            <PatternLayout pattern="%d{yyyy-MM-ddTHH:mm:ss:SSSZ}|%t|HEAERIE|PASSRINE|${hostname}|%-5level|%logger{36}.%M:%line|%msg%n"></PatternLayout>
+            <Policies>
+                <TimeBasedTriggeringPolicy></TimeBasedTriggeringPolicy>
+                <SizeBasedTriggeringPolicy size="100 MB"></SizeBasedTriggeringPolicy>
+            </Policies>
+        </RollingFile>
+
+
+    </Appenders>
+
+    <Loggers>
+        <Root level="info">
+            <AppenderRef ref="HeaeriePasserineFile"></AppenderRef>
+        </Root>
+    </Loggers>
+</Configuration>
