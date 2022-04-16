@@ -3,9 +3,12 @@ package com.heaerie.passerine.service;
 import com.heaerie.passerine.cube.PAS001MTMapper;
 import com.heaerie.passerine.pojo.PAS001MT;
 import com.heaerie.sqlite.PrimaryKeyException;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLPeerUnverifiedException;
 import javax.net.ssl.SSLSession;
 import java.io.*;
 import java.lang.reflect.InvocationTargetException;
@@ -21,6 +24,7 @@ import java.util.concurrent.ForkJoinPool;
 
 
 public class Search {
+    static final Logger logger = LogManager.getLogger();
     private static final String USER_AGENT = "passerinebot/1.0";
     private static final int PASSERINE_FORK_JOIN_POOL = 16;
     static volatile private int i=0;
@@ -28,18 +32,27 @@ public class Search {
     static volatile private int k=0;
     static volatile private int l=0;
     static Base64.Encoder encoder = Base64.getUrlEncoder();
-    static final HostnameVerifier hostNameVerifier=new HostnameVerifier() {
-        public boolean verify( final String arg0,    final SSLSession arg1) {
-            return true;
-        }
-    };
+
 
     static  {
+        System.setProperty("BasePath",getBasePath() );
+
         System.setProperty("log4j.configurationFile", getLogPath());
     }
 
-    private static String getLogPath() {
+    private static String getBasePath() {
         if (System.getProperty("os.name").startsWith("Windows")) {
+
+            return  "C:\\heaerie\\passerine\\conf\\";
+        } else {
+            return  "/etc/passerine/conf/";
+        }
+    }
+
+    private static String getLogPath() {
+        System.out.println("Os.Name=" + System.getProperty("os.name"));
+        if (System.getProperty("os.name").startsWith("Windows")) {
+
            return  "C:\\heaerie\\passerine\\conf\\passerine-log4j.xml";
         } else {
            return  "/etc/passerine/conf/passerine-log4j.xml";
@@ -91,6 +104,9 @@ public class Search {
     }
 
     public static void main(String argv []) throws SQLException {
+        System.out.println("Log File" + getLogPath());
+        System.out.println("System Log4j=" +  System.getProperty("log4j.configurationFile"));
+        logger.error("info {}", "info");
         CubeFactory cbeFactory=CubeFactory.getInstance();
         //processByRange("1.186.0.0", "1.186.255.255");
         System.out.println("passerine argv=" + printStringArr(argv));
@@ -194,6 +210,22 @@ public class Search {
             InetAddress ia = InetAddress.getByName(ip4s);
             rdns =ia.getCanonicalHostName();
             HttpsURLConnection con = (HttpsURLConnection) url.openConnection();
+
+             HostnameVerifier hostNameVerifier=new HostnameVerifier() {
+                 public boolean verify( final String arg0,    final SSLSession arg1) {
+                     logger.error("arg0={}, arg1={}", arg0, arg1);
+                     if (arg1 != null) {
+                         logger.error("getCipherSuite={}", arg1.getCipherSuite());
+                         try {
+                             logger.error("ia={},getPeerPrincipal.getName={}, subjectAltName={}", ia, arg1.getPeerPrincipal().getName(), arg1.getPeerPrincipal(), arg1.getValue("subjectAltName"));
+                         } catch (SSLPeerUnverifiedException e) {
+                             e.printStackTrace();
+                         }
+                     }
+
+                     return true;
+                 }
+             };
             con.setHostnameVerifier(hostNameVerifier);
             con.setRequestMethod("GET");
             con.setRequestProperty("User-Agent", USER_AGENT);
@@ -272,5 +304,9 @@ public class Search {
                     : resultString;
         }
     }
+
+
+
+
 
 }

@@ -1,0 +1,14 @@
+From ubuntu:20.04
+ADD . /app
+WORKDIR /app
+RUN apt-get update
+RUN apt-get upgrade
+RUN apt-get install default-jdk -y
+RUN apt-get install maven  -y
+RUN apt-get install git   -y
+RUN apt-get install vim   -y
+RUN apt-get install git  -y
+RUN cd Pillar && mvn clean install
+RUN mvn clean install 
+ENTRYPOINT ["java"] 
+CMD [ "-cp", "/app/target/passerine-1.0-SNAPSHOT-jar-with-dependencies.jar", "com.heaerie.passerine.service.Search", "1.0.0.0", "126.255.255.255"]

@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<Configuration >
+<Configuration monitorInterval="30" >
     <Appenders>
-        <Console name="HeaeriePasserineConsole" target="">
+        <Console name="HeaeriePasserineConsole">
             <PatternLayout pattern="%d{yyyy-MM-ddTHH:mm:ss:SSSZ}|%t|HEAERIE|PASSRINE|${hostname}|%-5level|%logger{36}.%M:%line|%msg%n"></PatternLayout>
         </Console>
-        <RollingFile name="HeaeriePasserineFile" fileNmae="C:\heaerie\passerine\log\heaerie-passerine.log"
-            filePattern="C:\heaerie\passerine\log\heaerie-passerine-%d{yyyy-MM-dd}-%i.log"
+        <RollingFile name="HeaeriePasserineFile" fileNmae="C:\heaerie\passerine\conf\heaerie-passerine.log"
+            filePattern="C:\heaerie\passerine\conf\heaerie-passerine-%d{yyyy-MM-dd}-%i.log"
         >
             <PatternLayout pattern="%d{yyyy-MM-ddTHH:mm:ss:SSSZ}|%t|HEAERIE|PASSRINE|${hostname}|%-5level|%logger{36}.%M:%line|%msg%n"></PatternLayout>
             <Policies>
@@ -19,7 +19,7 @@
 
     <Loggers>
         <Root level="info">
-            <AppenderRef ref="HeaeriePasserineFile"></AppenderRef>
+            <AppenderRef ref="HeaeriePasserineFile" />
         </Root>
     </Loggers>
 </Configuration>

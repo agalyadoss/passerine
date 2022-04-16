@@ -1,0 +1,27 @@
+from cimport import *
+import os
+import sys
+password="india"
+
+def createKey(jksfile, key, password): 
+	protectionParam= java.security.KeyStore.PasswordProtection( list(password))
+	ks = java.security.KeyStore.getInstance("JCEKS")
+	if not os.access(jksfile, os.R_OK):
+		ks.load(None, password)
+	else:
+		fis = open(jksfile, "r")
+		ks.load(fis, password)
+		skEntry = ks.getEntry(key, protectionParam)
+		if not skEntry == None:
+			print("key alreay present");
+			sys.exit(1)
+	fos = open(jksfile, "w")
+	keyGen= javax.crypto.KeyGenerator.getInstance("AES")
+	keyGen.init(256);
+	aesKey=keyGen.generateKey()
+	skEntry= java.security.KeyStore.SecretKeyEntry(aesKey)
+	ks.setEntry(key, skEntry, protectionParam );
+	ks.store(fos, password)
+	fos.close()
+
+createKey("test.jks", "key1", "india")
