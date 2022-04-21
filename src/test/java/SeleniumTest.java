@@ -5,7 +5,6 @@ import com.google.gson.GsonBuilder;
 import com.heaerie.passerine.cube.PAS001MTMapper;
 import com.heaerie.passerine.pojo.Kural;
 import com.heaerie.passerine.pojo.PAS001MT;
-import com.heaerie.passerine.pojo.ThiruKural;
 import com.heaerie.passerine.service.CubeFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -24,10 +23,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
 import java.sql.SQLException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -62,8 +58,14 @@ public class SeleniumTest {
 
     @Test
     public void test2() throws IOException {
+   /*
+   return wordCounts.entrySet()
+                .stream()
+                .sorted((Map.Entry.<String, Integer>comparingByValue().reversed()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+    */
 
-
+        Map<Integer, TitleOfKural>  sortedMap = new HashMap<>();
         WebDriver driver = new EdgeDriver();
         driver.manage().timeouts().implicitlyWait(10, TimeUnit.SECONDS);
 
@@ -76,34 +78,65 @@ public class SeleniumTest {
 
         List<WebElement> centers = driver.findElements(By.tagName("center"));
         for (WebElement center : centers) {
-            System.out.println("center=" + center.getText());
+            String color = center.getAttribute("color");
+            if (!Strings.isNullOrEmpty(color) && "blue".equalsIgnoreCase(color)) {
+                System.out.println("center=" + center.getText());
+            }
         }
         List<WebElement> headers = driver.findElements(By.tagName("font"));
         List<String> Titles = new ArrayList<>();
         List<TitleOfKural> TitleOfKurals = new ArrayList<>();
+        int headerIndex = 0;
         for (WebElement header : headers) {
+
             String color = header.getAttribute("color");
-            TypeOfTitle typeOfTitle = new TypeOfTitle();
-            if (!Strings.isNullOrEmpty(color) && "blue".equalsIgnoreCase(color)) {
 
-                if (isValidType(header.getText(), typeOfTitle)) {
-                    TitleOfKurals.add(new TitleOfKural(getTitle(header.getText()), typeOfTitle));
-                }
 
-            } else if (!Strings.isNullOrEmpty(color) && "red".equalsIgnoreCase(color)) {
-                if (isValidType(header.getText(), typeOfTitle)) {
-                    TitleOfKurals.add(new TitleOfKural(getTitle(header.getText()), typeOfTitle));
-                }
+            if (!Strings.isNullOrEmpty(color) && ("blue".equalsIgnoreCase(color) || "red".equalsIgnoreCase(color))) {
+
+                 List<String>  lines=splitByLine(header.getText());
+                lines.forEach(text -> {
+                    TypeOfTitle typeOfTitle = new TypeOfTitle();
+                    if (isValidType(text, typeOfTitle)) {
+                        System.out.println("success :" + text);
+                        TitleOfKurals.add(new TitleOfKural(getTitle(text), typeOfTitle));
+
+                    } else {
+                        System.err.println("err :" + text);
+                    }
+                });
+
+
             }
-            if (TYPE_IYAL.equalsIgnoreCase(typeOfTitle.getType())) {
-                System.out.println("TYPE_IYAL typeOfTitle=" + typeOfTitle + ", color=" + color + "header.getText()=" +  header.getText());
 
-
-            }
+            headerIndex= headerIndex + 1;
         }
 
+        TitleOfKurals.forEach(titleOfKural -> {
+            sortedMap.put(computeKey(titleOfKural.getTypeOfTitle()),  titleOfKural);
+        });
+        TypeOfTitle typeOfTitle321 =  new TypeOfTitle();
+        typeOfTitle321.setType(TYPE_ADHIGARAM);
+        typeOfTitle321.setPal(3);
+        typeOfTitle321.setIyal(2);
+        typeOfTitle321.setAdhigaram(1);
+        TitleOfKural titleOfKural321 = new TitleOfKural("பிரிவாற்றாமை",typeOfTitle321 );
+        sortedMap.put(computeKey(titleOfKural321.getTypeOfTitle()), titleOfKural321);
+        //அரசியல்
+        TypeOfTitle typeOfTitle22 =  new TypeOfTitle();
+        typeOfTitle22.setType(TYPE_IYAL);
+        typeOfTitle22.setPal(2);
+        typeOfTitle22.setIyal(2);
+        typeOfTitle22.setAdhigaram(0);
+        TitleOfKural titleOfKural22 = new TitleOfKural("அரசியல்",typeOfTitle22 );
+        sortedMap.put(computeKey(titleOfKural321.getTypeOfTitle()), titleOfKural22);
 
-        System.out.println("TitleOfKurals=" + TitleOfKurals);
+        Map<Integer,TitleOfKural> sorted= sortedMap.entrySet()
+                .stream()
+                .sorted((Map.Entry.<Integer, TitleOfKural>comparingByKey()))
+                .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (e1, e2) -> e1, LinkedHashMap::new));
+
+        System.out.println("TitleOfKurals=" + sorted);
 
 
         List<Kural> kuralgal = new ArrayList<>();
@@ -127,8 +160,13 @@ public class SeleniumTest {
                         varigal.add(varigalArr[i]);
                     }
                     kural.setVarigal(varigal);
+                    int kuralEn=++enCount;
+                    if (kural.getEn() != kuralEn) {
+                        System.err.println("Act:" + kural.getEn() + "!= Exp:" + kuralEn);
+                        kural.setEn(kuralEn);
+                    }
+                    kuralMap.put(kuralEn, kural);
 
-                    kuralMap.put(++enCount, kural);
 
                     kuralgal.add(kural);
 
@@ -141,37 +179,16 @@ public class SeleniumTest {
 
 
             }
+
         }
 
-        List<TitleOfKural> iyals = TitleOfKurals.stream().filter(titleOfKural -> TYPE_IYAL.equalsIgnoreCase(titleOfKural.getTypeOfTitle().getType())).collect(Collectors.toUnmodifiableList());
-        System.out.println(" iyals=" + iyals);
-        iyals.forEach(iyal -> {
 
-            List<TitleOfKural> firstAthiGaram = TitleOfKurals.stream().filter(titleOfKural -> TYPE_ADHIGARAM.equalsIgnoreCase(titleOfKural.getTypeOfTitle().getType())
-                    && iyal.getTypeOfTitle().getPal() == titleOfKural.getTypeOfTitle().getPal()
-                    && iyal.getTypeOfTitle().getIyal() == titleOfKural.getTypeOfTitle().getIyal()
-                    && titleOfKural.getTypeOfTitle().getAdhigaram() == 1).collect(Collectors.toUnmodifiableList());
-            System.out.println("iyal=" + iyal + ", firstAthiGaram=" + firstAthiGaram);
-            if (firstAthiGaram.isEmpty()) {
-
-                int i = TitleOfKurals.indexOf(iyal);
-                TypeOfTitle typeOfTitle = new TypeOfTitle();
-                typeOfTitle.setAdhigaram(1);
-                typeOfTitle.setPal(iyal.getTypeOfTitle().getPal());
-                typeOfTitle.setType(TYPE_ADHIGARAM);
-
-                TitleOfKural athigaram = new TitleOfKural(iyal.title, typeOfTitle);
-                TitleOfKurals.add(i, athigaram);
-
-
-            }
-
-        });
+        List<TitleOfKural> titleOfKuralsSorted = new ArrayList<>();
 
         int athigaram = 1;
 
-        for (TitleOfKural titleOfKural : TitleOfKurals) {
-            if (TYPE_ADHIGARAM.equals(titleOfKural.getTypeOfTitle().getType())) {
+        for ( Map.Entry<Integer, TitleOfKural>  titleOfKural : sorted.entrySet()) {
+            if (TYPE_ADHIGARAM.equals(titleOfKural.getValue().getTypeOfTitle().getType())) {
                 List<Kural> kurals = new ArrayList<>();
                 for (int i = ((athigaram - 1) * 10) + 1; i <= athigaram * 10; i++) {
 
@@ -182,15 +199,46 @@ public class SeleniumTest {
                     kurals.add(kuralMap.get(i));
                 }
                 athigaram++;
-                titleOfKural.setKurals(kurals);
+                titleOfKural.getValue().setKurals(kurals);
             }
+            titleOfKuralsSorted.add(titleOfKural.getValue());
         }
+
+
+       List<TitleOfKural> pals=  titleOfKuralsSorted.stream().filter(titleOfKural ->
+           TYPE_PAL.equalsIgnoreCase(titleOfKural.getTypeOfTitle().getType())
+        ).collect(Collectors.toUnmodifiableList());
+
+
+        pals.forEach(pal -> {
+             pal.setIyals( titleOfKuralsSorted.stream().filter(titleOfKural ->
+                    TYPE_IYAL.equalsIgnoreCase(titleOfKural.getTypeOfTitle().getType())
+                     && titleOfKural.getTypeOfTitle().getPal() == pal.getTypeOfTitle().getPal()
+            ).collect(Collectors.toUnmodifiableList()));
+
+        });
+
+        List<TitleOfKural> iyals=  titleOfKuralsSorted.stream().filter(titleOfKural ->
+                TYPE_IYAL.equalsIgnoreCase(titleOfKural.getTypeOfTitle().getType())
+        ).collect(Collectors.toUnmodifiableList());
+
+        iyals.forEach(iayl -> {
+            iayl.setAthigarams( titleOfKuralsSorted.stream().filter(titleOfKural ->
+                    TYPE_ADHIGARAM
+                            .equalsIgnoreCase(titleOfKural.getTypeOfTitle().getType())
+                            && titleOfKural.getTypeOfTitle().getPal() == iayl.getTypeOfTitle().getPal()
+                            && titleOfKural.getTypeOfTitle().getIyal() == iayl.getTypeOfTitle().getIyal()
+            ).collect(Collectors.toUnmodifiableList()));
+
+        });
 
         File f = new File("C:\\logs\\kural.json");
 
         FileWriter wr = new FileWriter(f);
-        wr.write(gson.toJson(TitleOfKurals));
+        wr.write(gson.toJson(titleOfKuralsSorted));
         wr.close();
+
+
 
 
                     /*
@@ -211,6 +259,21 @@ public class SeleniumTest {
 
     }
 
+    private Integer computeKey(TypeOfTitle typeOfTitle) {
+        return typeOfTitle.getAdhigaram() * 1 + typeOfTitle.getIyal()*100 + typeOfTitle.getPal()*1000;
+    }
+
+    private List<String> splitByLine(String text) {
+        List<String> lines = new ArrayList<>();
+        if  (!Strings.isNullOrEmpty(text)) {
+           String[] strArr= text.split("\\n");
+           for(int i=0; i< strArr.length; i++) {
+                lines.add(strArr[i]);
+           }
+        }
+        return  lines;
+    }
+
     private String getTitle(String text) {
 
         return text.split("\\n")[0].replaceAll("^[\\s\\.,\\d]+", "");
@@ -220,6 +283,9 @@ public class SeleniumTest {
     public static class TitleOfKural {
         String title;
         TypeOfTitle typeOfTitle;
+
+        List<TitleOfKural> athigarams;
+        List<TitleOfKural> iyals;
         List<Kural> kurals;
 
         public List<Kural> getKurals() {
@@ -252,11 +318,30 @@ public class SeleniumTest {
             this.typeOfTitle = typeOfTitle;
         }
 
+
+        public List<TitleOfKural> getIyals() {
+            return iyals;
+        }
+
+        public void setIyals(List<TitleOfKural> iyals) {
+            this.iyals = iyals;
+        }
+
+        public List<TitleOfKural> getAthigarams() {
+            return athigarams;
+        }
+
+        public void setAthigarams(List<TitleOfKural> athigarams) {
+            this.athigarams = athigarams;
+        }
+
         @Override
         public String toString() {
             return "TitleOfKural{" +
                     "title='" + title + '\'' +
                     ", typeOfTitle=" + typeOfTitle +
+                    ", athigarams=" + athigarams +
+                    ", iyals=" + iyals +
                     ", kurals=" + kurals +
                     '}';
         }
